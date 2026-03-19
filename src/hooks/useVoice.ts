@@ -11,9 +11,9 @@ export interface UsageStats {
 // Map UI selections to Murf voice IDs
 const VOICE_MAP: Record<string, Record<string, string>> = {
   "US English": { Female: "en-US-natalie", Male: "en-US-marcus" },
-  "UK English": { Female: "en-UK-hazel", Male: "en-UK-ethan" },
-  "Indian English": { Female: "en-IN-isha", Male: "en-IN-arjun" },
-  "Australian English": { Female: "en-AU-evie", Male: "en-AU-liam" },
+  "UK English": { Female: "en-UK-hazel", Male: "en-UK-gabriel" },
+  "Indian English": { Female: "en-IN-isha", Male: "en-IN-aarav" },
+  "Australian English": { Female: "en-AU-evie", Male: "en-AU-shane" },
 };
 
 export type ConversationMessage = { role: "user" | "assistant"; content: string };
