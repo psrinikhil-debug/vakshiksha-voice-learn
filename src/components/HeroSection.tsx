@@ -1,8 +1,125 @@
-import { motion } from "framer-motion";
-import { Mic } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mic, Square, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 
 const HeroSection = () => {
+  const [isListening, setIsListening] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [statusText, setStatusText] = useState("");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const stopAll = useCallback(() => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.abort(); } catch {}
+      recognitionRef.current = null;
+    }
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
+    }
+    speechSynthesis.cancel();
+    setIsListening(false);
+    setIsProcessing(false);
+    setIsSpeaking(false);
+    setStatusText("");
+  }, []);
+
+  const handleMicClick = useCallback(() => {
+    if (isListening || isProcessing || isSpeaking) {
+      stopAll();
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setStatusText("Speech recognition not supported");
+      setTimeout(() => setStatusText(""), 3000);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      setStatusText("Listening...");
+    };
+
+    recognition.onresult = async (event: any) => {
+      const transcript = event.results[0]?.[0]?.transcript;
+      if (!transcript) {
+        setIsListening(false);
+        setStatusText("");
+        return;
+      }
+
+      setIsListening(false);
+      setIsProcessing(true);
+      setStatusText(`"${transcript}" — Thinking...`);
+
+      try {
+        const { data, error } = await supabase.functions.invoke("voice-qa", {
+          body: { question: transcript, voiceId: "en-US-natalie" },
+        });
+
+        if (error || data?.error) throw new Error(data?.error || error?.message);
+
+        const answer = data?.answer || "I couldn't find an answer.";
+        setIsProcessing(false);
+        setIsSpeaking(true);
+        setStatusText(answer);
+
+        if (data?.audioFile) {
+          const audio = new Audio(data.audioFile);
+          audioRef.current = audio;
+          audio.onended = () => {
+            setIsSpeaking(false);
+            setTimeout(() => setStatusText(""), 5000);
+          };
+          audio.onerror = () => {
+            setIsSpeaking(false);
+            setStatusText("Audio playback failed");
+          };
+          await audio.play();
+        } else {
+          const utterance = new SpeechSynthesisUtterance(answer);
+          utterance.rate = 0.95;
+          utterance.onend = () => {
+            setIsSpeaking(false);
+            setTimeout(() => setStatusText(""), 5000);
+          };
+          speechSynthesis.speak(utterance);
+        }
+      } catch (err: unknown) {
+        setIsProcessing(false);
+        setStatusText(err instanceof Error ? err.message : "Something went wrong");
+        setTimeout(() => setStatusText(""), 4000);
+      }
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+      setStatusText("Could not hear you, try again");
+      setTimeout(() => setStatusText(""), 3000);
+    };
+
+    recognition.onend = () => {
+      if (isListening) setIsListening(false);
+    };
+
+    recognition.start();
+  }, [isListening, isProcessing, isSpeaking, stopAll]);
+
+  const isActive = isListening || isProcessing || isSpeaking;
+
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden px-4">
       {/* Background blobs */}
@@ -67,29 +184,95 @@ const HeroSection = () => {
           </Button>
         </motion.div>
 
-        {/* Floating mic animation */}
+        {/* Functional floating mic */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, delay: 0.5 }}
-          className="mt-16 flex justify-center"
+          className="mt-16 flex flex-col items-center"
         >
-          <div className="relative">
-            <div className="w-24 h-24 rounded-full gradient-hero flex items-center justify-center shadow-glow animate-float">
-              <Mic className="w-10 h-10 text-primary-foreground" />
+          <button
+            onClick={handleMicClick}
+            className="relative group cursor-pointer focus:outline-none"
+            aria-label={isActive ? "Stop" : "Tap to ask a question"}
+          >
+            <div
+              className={`w-24 h-24 rounded-full flex items-center justify-center shadow-glow transition-all duration-300 ${
+                isListening
+                  ? "bg-destructive animate-pulse"
+                  : isProcessing
+                  ? "gradient-warm"
+                  : isSpeaking
+                  ? "gradient-hero animate-pulse"
+                  : "gradient-hero animate-float group-hover:scale-110"
+              }`}
+            >
+              {isProcessing ? (
+                <Loader2 className="w-10 h-10 text-primary-foreground animate-spin" />
+              ) : isActive ? (
+                <Square className="w-8 h-8 text-primary-foreground" />
+              ) : (
+                <Mic className="w-10 h-10 text-primary-foreground" />
+              )}
             </div>
-            {/* Sound waves */}
-            {[1, 2, 3].map(i => (
-              <div
-                key={i}
-                className="absolute inset-0 rounded-full border-2 border-primary/20"
-                style={{
-                  animation: `ping ${2 + i * 0.5}s cubic-bezier(0, 0, 0.2, 1) infinite`,
-                  animationDelay: `${i * 0.4}s`,
-                }}
-              />
-            ))}
-          </div>
+            {/* Sound waves — only when idle */}
+            {!isActive &&
+              [1, 2, 3].map(i => (
+                <div
+                  key={i}
+                  className="absolute inset-0 rounded-full border-2 border-primary/20"
+                  style={{
+                    animation: `ping ${2 + i * 0.5}s cubic-bezier(0, 0, 0.2, 1) infinite`,
+                    animationDelay: `${i * 0.4}s`,
+                  }}
+                />
+              ))}
+            {/* Active rings for listening */}
+            {isListening &&
+              [1, 2].map(i => (
+                <div
+                  key={`listen-${i}`}
+                  className="absolute inset-0 rounded-full border-2 border-destructive/30"
+                  style={{
+                    animation: `ping ${1.5 + i * 0.3}s cubic-bezier(0, 0, 0.2, 1) infinite`,
+                    animationDelay: `${i * 0.2}s`,
+                  }}
+                />
+              ))}
+          </button>
+
+          {/* Status text */}
+          <AnimatePresence mode="wait">
+            {statusText ? (
+              <motion.p
+                key="status"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className={`mt-4 text-sm max-w-md px-4 py-2 rounded-xl ${
+                  isListening
+                    ? "text-destructive bg-destructive/10"
+                    : isProcessing
+                    ? "text-accent bg-accent/10"
+                    : isSpeaking
+                    ? "text-foreground bg-card border border-border/50 shadow-sm"
+                    : "text-muted-foreground"
+                }`}
+              >
+                {statusText}
+              </motion.p>
+            ) : (
+              <motion.p
+                key="hint"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="mt-4 text-sm text-muted-foreground"
+              >
+                Tap the mic to ask anything
+              </motion.p>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         <motion.p
