@@ -44,17 +44,17 @@ const VoiceDemoSection = () => {
   }, [conversation]);
 
   const handleSubmit = () => {
-    if (!text.trim()) return;
-    if (isSpeaking) {
+    if (isSpeaking || isLoading) {
       stopSpeaking();
       return;
     }
+    if (!text.trim()) return;
     if (mode === "qa") {
       askQuestion(text, selectedAccent, selectedVoice);
+      setText("");
     } else {
       speak(text, selectedAccent, selectedVoice);
     }
-    if (mode === "qa") setText("");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -214,14 +214,13 @@ const VoiceDemoSection = () => {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <Button
               onClick={handleSubmit}
-              disabled={(!text.trim() && !isSpeaking) || isLoading}
+              disabled={!text.trim() && !isSpeaking && !isLoading}
               className="gradient-hero hover:opacity-90 text-primary-foreground rounded-xl px-6 gap-2"
               size="lg"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  {mode === "qa" ? "Thinking..." : "Generating..."}
+                  <VolumeX className="w-5 h-5" /> Stop
                 </>
               ) : isSpeaking ? (
                 <>
