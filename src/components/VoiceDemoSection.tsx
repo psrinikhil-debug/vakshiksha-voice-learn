@@ -220,8 +220,7 @@ const VoiceDemoSection = () => {
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  {mode === "qa" ? "Thinking..." : "Generating..."}
+                  <VolumeX className="w-5 h-5" /> Stop
                 </>
               ) : isSpeaking ? (
                 <>
