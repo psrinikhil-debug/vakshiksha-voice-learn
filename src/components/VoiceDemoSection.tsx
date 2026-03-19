@@ -214,7 +214,7 @@ const VoiceDemoSection = () => {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <Button
               onClick={handleSubmit}
-              disabled={(!text.trim() && !isSpeaking) || isLoading}
+              disabled={!text.trim() && !isSpeaking && !isLoading}
               className="gradient-hero hover:opacity-90 text-primary-foreground rounded-xl px-6 gap-2"
               size="lg"
             >
