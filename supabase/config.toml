@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.voice-qa]
 verify_jwt = false
+
+[functions.translate]
+verify_jwt = false
