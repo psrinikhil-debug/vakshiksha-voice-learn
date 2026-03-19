@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Mic, MicOff, Volume2, VolumeX, Send } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useVoice } from "@/hooks/useVoice";
@@ -10,7 +10,7 @@ const accents = ["US English", "UK English", "Indian English", "Australian Engli
 const voiceTypes = ["Female", "Male"];
 
 const VoiceDemoSection = () => {
-  const { isSpeaking, isListening, transcript, usage, speak, stopSpeaking, startListening, setTranscript } = useVoice();
+  const { isSpeaking, isListening, isLoading, transcript, usage, error, speak, stopSpeaking, startListening, setTranscript } = useVoice();
   const [text, setText] = useState("");
   const [selectedAccent, setSelectedAccent] = useState(accents[0]);
   const [selectedVoice, setSelectedVoice] = useState(voiceTypes[0]);
@@ -20,7 +20,6 @@ const VoiceDemoSection = () => {
     setWaveActive(isSpeaking || isListening);
   }, [isSpeaking, isListening]);
 
-  // Update wave bars periodically when active
   const [, setTick] = useState(0);
   useEffect(() => {
     if (!waveActive) return;
@@ -37,7 +36,7 @@ const VoiceDemoSection = () => {
     if (isSpeaking) {
       stopSpeaking();
     } else {
-      speak(text, selectedVoice === "Male" ? "male" : "female");
+      speak(text, selectedAccent, selectedVoice);
     }
   };
 
@@ -57,7 +56,7 @@ const VoiceDemoSection = () => {
             Experience <span className="text-gradient-warm">Voice Learning</span>
           </h2>
           <p className="text-muted-foreground text-lg">
-            Type or speak — hear AI bring your text to life
+            Type or speak — hear AI bring your text to life with Murf AI
           </p>
         </motion.div>
 
@@ -84,6 +83,13 @@ const VoiceDemoSection = () => {
               {voiceTypes.map(v => <option key={v}>{v}</option>)}
             </select>
           </div>
+
+          {/* Error display */}
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
+              {error}
+            </div>
+          )}
 
           {/* Text Area */}
           <div className="relative mb-4">
@@ -118,11 +124,15 @@ const VoiceDemoSection = () => {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <Button
               onClick={handleGenerate}
-              disabled={!text.trim() && !isSpeaking}
+              disabled={(!text.trim() && !isSpeaking) || isLoading}
               className="gradient-hero hover:opacity-90 text-primary-foreground rounded-xl px-6 gap-2"
               size="lg"
             >
-              {isSpeaking ? (
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" /> Generating...
+                </>
+              ) : isSpeaking ? (
                 <>
                   <VolumeX className="w-5 h-5" /> Stop
                 </>
