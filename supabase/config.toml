@@ -2,3 +2,6 @@ project_id = "imbxkjabvxovsehclert"
 
 [functions.murf-tts]
 verify_jwt = false
+
+[functions.voice-qa]
+verify_jwt = false

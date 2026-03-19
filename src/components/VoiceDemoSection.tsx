@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Mic, MicOff, Volume2, VolumeX, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mic, MicOff, Volume2, VolumeX, Loader2, MessageCircle, Send, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useVoice } from "@/hooks/useVoice";
@@ -9,12 +9,20 @@ import WaveformVisualizer from "@/components/WaveformVisualizer";
 const accents = ["US English", "UK English", "Indian English", "Australian English"];
 const voiceTypes = ["Female", "Male"];
 
+type Mode = "tts" | "qa";
+
 const VoiceDemoSection = () => {
-  const { isSpeaking, isListening, isLoading, transcript, usage, error, speak, stopSpeaking, startListening, setTranscript } = useVoice();
+  const {
+    isSpeaking, isListening, isLoading, transcript, usage, error, conversation,
+    speak, askQuestion, stopSpeaking, startListening, setTranscript, clearConversation,
+  } = useVoice();
+
   const [text, setText] = useState("");
   const [selectedAccent, setSelectedAccent] = useState(accents[0]);
   const [selectedVoice, setSelectedVoice] = useState(voiceTypes[0]);
+  const [mode, setMode] = useState<Mode>("qa");
   const [waveActive, setWaveActive] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setWaveActive(isSpeaking || isListening);
@@ -31,12 +39,28 @@ const VoiceDemoSection = () => {
     if (transcript) setText(transcript);
   }, [transcript]);
 
-  const handleGenerate = () => {
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [conversation]);
+
+  const handleSubmit = () => {
     if (!text.trim()) return;
     if (isSpeaking) {
       stopSpeaking();
+      return;
+    }
+    if (mode === "qa") {
+      askQuestion(text, selectedAccent, selectedVoice);
     } else {
       speak(text, selectedAccent, selectedVoice);
+    }
+    if (mode === "qa") setText("");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
     }
   };
 
@@ -56,7 +80,7 @@ const VoiceDemoSection = () => {
             Experience <span className="text-gradient-warm">Voice Learning</span>
           </h2>
           <p className="text-muted-foreground text-lg">
-            Type or speak — hear AI bring your text to life with Murf AI
+            Ask any question and hear AI answer — or convert text to natural speech
           </p>
         </motion.div>
 
@@ -66,6 +90,32 @@ const VoiceDemoSection = () => {
           viewport={{ once: true }}
           className="bg-card rounded-3xl p-6 md:p-8 shadow-card border border-border/50"
         >
+          {/* Mode Toggle */}
+          <div className="flex items-center gap-2 mb-4">
+            <button
+              onClick={() => setMode("qa")}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                mode === "qa"
+                  ? "gradient-hero text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <MessageCircle className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+              Ask AI
+            </button>
+            <button
+              onClick={() => setMode("tts")}
+              className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                mode === "tts"
+                  ? "gradient-hero text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Volume2 className="w-4 h-4 inline mr-1.5 -mt-0.5" />
+              Text to Speech
+            </button>
+          </div>
+
           {/* Controls Row */}
           <div className="flex flex-wrap gap-3 mb-4">
             <select
@@ -82,7 +132,42 @@ const VoiceDemoSection = () => {
             >
               {voiceTypes.map(v => <option key={v}>{v}</option>)}
             </select>
+            {mode === "qa" && conversation.length > 0 && (
+              <button
+                onClick={clearConversation}
+                className="ml-auto px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Clear
+              </button>
+            )}
           </div>
+
+          {/* Conversation Area (QA mode) */}
+          {mode === "qa" && conversation.length > 0 && (
+            <div className="mb-4 max-h-64 overflow-y-auto rounded-xl bg-muted/30 border border-border/40 p-4 space-y-3">
+              <AnimatePresence>
+                {conversation.map((msg, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                        msg.role === "user"
+                          ? "gradient-hero text-primary-foreground rounded-br-md"
+                          : "bg-card border border-border/50 text-foreground rounded-bl-md"
+                      }`}
+                    >
+                      {msg.content}
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+              <div ref={chatEndRef} />
+            </div>
+          )}
 
           {/* Error display */}
           {error && (
@@ -96,8 +181,13 @@ const VoiceDemoSection = () => {
             <Textarea
               value={text}
               onChange={e => setText(e.target.value)}
-              placeholder="Type something to convert to speech, or click the mic to speak..."
-              className="min-h-[120px] text-base resize-none pr-14 rounded-xl border-border/60"
+              onKeyDown={handleKeyDown}
+              placeholder={
+                mode === "qa"
+                  ? "Ask any question — e.g. 'What is photosynthesis?' or 'Explain gravity'..."
+                  : "Type something to convert to speech..."
+              }
+              className="min-h-[80px] text-base resize-none pr-14 rounded-xl border-border/60"
             />
             <button
               onClick={isListening ? undefined : startListening}
@@ -123,18 +213,23 @@ const VoiceDemoSection = () => {
           {/* Actions */}
           <div className="flex items-center justify-between flex-wrap gap-3">
             <Button
-              onClick={handleGenerate}
+              onClick={handleSubmit}
               disabled={(!text.trim() && !isSpeaking) || isLoading}
               className="gradient-hero hover:opacity-90 text-primary-foreground rounded-xl px-6 gap-2"
               size="lg"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-5 h-5 animate-spin" /> Generating...
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  {mode === "qa" ? "Thinking..." : "Generating..."}
                 </>
               ) : isSpeaking ? (
                 <>
                   <VolumeX className="w-5 h-5" /> Stop
+                </>
+              ) : mode === "qa" ? (
+                <>
+                  <Send className="w-5 h-5" /> Ask & Listen
                 </>
               ) : (
                 <>
