@@ -14,8 +14,8 @@ interface Translations {
 
 const langMeta: Record<string, { label: string; native: string; flag: string; voiceId: string }> = {
   english: { label: "English", native: "English", flag: "🇺🇸", voiceId: "en-US-natalie" },
-  hindi: { label: "Hindi", native: "हिन्दी", flag: "🇮🇳", voiceId: "hi-IN-ananya" },
-  telugu: { label: "Telugu", native: "తెలుగు", flag: "🇮🇳", voiceId: "te-IN-shruti" },
+  hindi: { label: "Hindi", native: "हिन्दी", flag: "🇮🇳", voiceId: "hi-IN-shweta" },
+  telugu: { label: "Telugu", native: "తెలుగు", flag: "🇮🇳", voiceId: "en-IN-isha" },
 };
 
 const TranslationSection = () => {
