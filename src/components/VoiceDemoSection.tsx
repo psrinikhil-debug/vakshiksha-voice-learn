@@ -44,17 +44,17 @@ const VoiceDemoSection = () => {
   }, [conversation]);
 
   const handleSubmit = () => {
-    if (!text.trim()) return;
-    if (isSpeaking) {
+    if (isSpeaking || isLoading) {
       stopSpeaking();
       return;
     }
+    if (!text.trim()) return;
     if (mode === "qa") {
       askQuestion(text, selectedAccent, selectedVoice);
+      setText("");
     } else {
       speak(text, selectedAccent, selectedVoice);
     }
-    if (mode === "qa") setText("");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
