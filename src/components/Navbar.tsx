@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mic, Menu, X } from "lucide-react";
+import { Mic, Menu, X, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/hooks/useTheme";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -11,6 +12,7 @@ const navLinks = [
 
 const Navbar = () => {
   const [open, setOpen] = useState(false);
+  const { isDark, toggle } = useTheme();
 
   return (
     <motion.nav
