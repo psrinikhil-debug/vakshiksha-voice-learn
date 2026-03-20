@@ -45,6 +45,12 @@ const Navbar = () => {
           >
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
+          <Link
+            to="/pro"
+            className="px-5 py-2 rounded-full gradient-warm text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5"
+          >
+            <Crown className="w-3.5 h-3.5" /> Pro
+          </Link>
           <a
             href="#demo"
             className="px-5 py-2 rounded-full gradient-hero text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
