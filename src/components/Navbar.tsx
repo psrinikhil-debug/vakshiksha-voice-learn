@@ -35,6 +35,13 @@ const Navbar = () => {
               {l.label}
             </a>
           ))}
+          <button
+            onClick={toggle}
+            className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
+            aria-label="Toggle dark mode"
+          >
+            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
           <a
             href="#demo"
             className="px-5 py-2 rounded-full gradient-hero text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity"
