@@ -73,13 +73,22 @@ const Navbar = () => {
               {l.label}
             </a>
           ))}
-          <a
-            href="#demo"
-            onClick={() => setOpen(false)}
-            className="block mt-2 text-center px-5 py-2.5 rounded-full gradient-hero text-primary-foreground text-sm font-semibold"
-          >
-            Try Now
-          </a>
+          <div className="flex items-center gap-3 mt-2">
+            <button
+              onClick={toggle}
+              className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center"
+              aria-label="Toggle dark mode"
+            >
+              {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+            <a
+              href="#demo"
+              onClick={() => setOpen(false)}
+              className="flex-1 text-center px-5 py-2.5 rounded-full gradient-hero text-primary-foreground text-sm font-semibold"
+            >
+              Try Now
+            </a>
+          </div>
         </motion.div>
       )}
     </motion.nav>
