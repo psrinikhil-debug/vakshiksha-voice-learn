@@ -8,3 +8,15 @@ verify_jwt = false
 
 [functions.translate]
 verify_jwt = false
+
+[functions.razorpay-order]
+verify_jwt = false
+
+[functions.elevenlabs-clone]
+verify_jwt = false
+
+[functions.elevenlabs-dub]
+verify_jwt = false
+
+[functions.check-pro]
+verify_jwt = false
