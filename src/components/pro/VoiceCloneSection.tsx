@@ -146,7 +146,7 @@ const VoiceCloneSection = () => {
                   </p>
                 </div>
               </div>
-              <CheckCircle className="w-4 h-4 text-green-500" />
+              <CheckCircle className="w-4 h-4 text-secondary" />
             </motion.div>
           ))}
         </div>

@@ -108,7 +108,7 @@ const DubbingSection = () => {
       {/* Done */}
       {status === "done" && dubbedAudioUrl && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm font-medium text-green-600">
+          <div className="flex items-center gap-2 text-sm font-medium text-secondary">
             <CheckCircle className="w-4 h-4" /> Dubbing complete!
           </div>
           <audio src={dubbedAudioUrl} controls className="w-full" />
