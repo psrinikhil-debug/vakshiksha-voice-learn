@@ -3,8 +3,6 @@ import { motion } from "framer-motion";
 import { Mic, Menu, X, Sun, Moon, Crown } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { Link } from "react-router-dom";
-import { Mic, Menu, X, Sun, Moon } from "lucide-react";
-import { useTheme } from "@/hooks/useTheme";
 
 const navLinks = [
   { label: "Features", href: "#features" },
