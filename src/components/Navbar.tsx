@@ -90,6 +90,13 @@ const Navbar = () => {
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
+            <Link
+              to="/pro"
+              onClick={() => setOpen(false)}
+              className="px-4 py-2.5 rounded-full gradient-warm text-primary-foreground text-sm font-semibold text-center flex items-center justify-center gap-1.5"
+            >
+              <Crown className="w-3.5 h-3.5" /> Pro
+            </Link>
             <a
               href="#demo"
               onClick={() => setOpen(false)}
