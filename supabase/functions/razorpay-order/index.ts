@@ -56,7 +56,7 @@ serve(async (req) => {
     }
 
     if (action === "verify_payment") {
-      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json().catch(() => ({}));
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
 
       // Verify signature using HMAC SHA256
       const encoder = new TextEncoder();
