@@ -29,7 +29,8 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Not authenticated");
 
-    const { action } = await req.json();
+    const body = await req.json();
+    const { action } = body;
 
     if (action === "create_order") {
       const res = await fetch("https://api.razorpay.com/v1/orders", {
@@ -41,7 +42,7 @@ serve(async (req) => {
         body: JSON.stringify({
           amount: 20000, // ₹200 in paise
           currency: "INR",
-          receipt: `pro_${user.id}_${Date.now()}`,
+          receipt: `pro_${Date.now()}`,
           notes: { user_id: user.id, plan: "vakshiksha_pro" },
         }),
       });
@@ -55,7 +56,7 @@ serve(async (req) => {
     }
 
     if (action === "verify_payment") {
-      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json().catch(() => ({}));
+      const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
 
       // Verify signature using HMAC SHA256
       const encoder = new TextEncoder();
