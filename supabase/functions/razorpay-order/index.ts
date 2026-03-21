@@ -41,7 +41,7 @@ serve(async (req) => {
         body: JSON.stringify({
           amount: 20000, // ₹200 in paise
           currency: "INR",
-          receipt: `pro_${user.id}_${Date.now()}`,
+          receipt: `pro_${Date.now()}`,
           notes: { user_id: user.id, plan: "vakshiksha_pro" },
         }),
       });
