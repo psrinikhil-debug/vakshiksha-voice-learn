@@ -29,7 +29,8 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) throw new Error("Not authenticated");
 
-    const { action } = await req.json();
+    const body = await req.json();
+    const { action } = body;
 
     if (action === "create_order") {
       const res = await fetch("https://api.razorpay.com/v1/orders", {
