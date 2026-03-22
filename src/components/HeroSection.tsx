@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
