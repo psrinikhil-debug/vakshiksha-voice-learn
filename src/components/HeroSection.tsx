@@ -31,9 +31,16 @@ const HeroSection = () => {
     setStatusText("");
   }, []);
 
-  const handleMicClick = useCallback(() => {
+  const handleMicClick = useCallback(async () => {
     if (isListening || isProcessing || isSpeaking) {
       stopAll();
+      return;
+    }
+
+    // Require login to use voice features
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      navigate("/auth");
       return;
     }
 
