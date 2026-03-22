@@ -45,9 +45,16 @@ serve(async (req) => {
     const action = url.searchParams.get("action");
 
     if (action === "status") {
-      // Check dubbing status
       const dubbingId = url.searchParams.get("dubbing_id");
       if (!dubbingId) throw new Error("dubbing_id required");
+
+      // Verify ownership
+      const { data: job } = await supabase
+        .from("dubbing_jobs")
+        .select("id")
+        .eq("dubbing_id", dubbingId)
+        .single();
+      if (!job) throw new Error("Dubbing job not found or access denied");
 
       const statusRes = await fetch(
         `https://api.elevenlabs.io/v1/dubbing/${dubbingId}`,
@@ -64,6 +71,14 @@ serve(async (req) => {
       const dubbingId = url.searchParams.get("dubbing_id");
       const languageCode = url.searchParams.get("language_code") || "hi";
       if (!dubbingId) throw new Error("dubbing_id required");
+
+      // Verify ownership
+      const { data: job } = await supabase
+        .from("dubbing_jobs")
+        .select("id")
+        .eq("dubbing_id", dubbingId)
+        .single();
+      if (!job) throw new Error("Dubbing job not found or access denied");
 
       const dlRes = await fetch(
         `https://api.elevenlabs.io/v1/dubbing/${dubbingId}/audio/${languageCode}`,
@@ -104,6 +119,19 @@ serve(async (req) => {
 
     const data = await response.json();
     if (!response.ok) throw new Error(`ElevenLabs dubbing error: ${JSON.stringify(data)}`);
+
+    // Store dubbing job for ownership tracking
+    const { error: insertError } = await supabase
+      .from("dubbing_jobs")
+      .insert({
+        user_id: user.id,
+        dubbing_id: data.dubbing_id,
+        target_lang: targetLang,
+        source_lang: sourceLang,
+      });
+    if (insertError) {
+      console.error("Failed to store dubbing job:", insertError);
+    }
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
