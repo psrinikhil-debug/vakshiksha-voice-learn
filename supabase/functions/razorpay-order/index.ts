@@ -88,7 +88,7 @@ serve(async (req) => {
         razorpay_payment_id,
         razorpay_order_id,
         razorpay_signature,
-        amount: 20000,
+        amount: 100,
         status: "active",
       });
 
