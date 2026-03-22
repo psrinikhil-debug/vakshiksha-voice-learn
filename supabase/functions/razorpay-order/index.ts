@@ -40,7 +40,7 @@ serve(async (req) => {
           Authorization: "Basic " + btoa(`${keyId}:${keySecret}`),
         },
         body: JSON.stringify({
-          amount: 20000, // ₹200 in paise
+          amount: 100, // ₹1 in paise
           currency: "INR",
           receipt: `pro_${Date.now()}`,
           notes: { user_id: user.id, plan: "vakshiksha_pro" },

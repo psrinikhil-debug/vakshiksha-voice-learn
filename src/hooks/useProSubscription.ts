@@ -71,7 +71,7 @@ export function useProSubscription() {
           amount: data.order.amount,
           currency: data.order.currency,
           name: "VakSiksha Pro",
-          description: "Monthly Pro Subscription — ₹200/month",
+          description: "Monthly Pro Subscription — ₹1/month",
           order_id: data.order.id,
           handler: async (response: any) => {
             try {
