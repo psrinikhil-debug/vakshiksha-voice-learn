@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      dubbing_jobs: {
+        Row: {
+          created_at: string
+          dubbing_id: string
+          id: string
+          source_lang: string
+          target_lang: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          dubbing_id: string
+          id?: string
+          source_lang?: string
+          target_lang?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          dubbing_id?: string
+          id?: string
+          source_lang?: string
+          target_lang?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       pro_subscriptions: {
         Row: {
           amount: number
