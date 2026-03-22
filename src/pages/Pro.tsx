@@ -107,7 +107,7 @@ const Pro = () => {
 
               <div className="mb-6">
                 <div className="text-4xl font-bold font-display">
-                  ₹200<span className="text-lg font-normal text-muted-foreground">/month</span>
+                  ₹1<span className="text-lg font-normal text-muted-foreground">/month</span>
                 </div>
               </div>
 
