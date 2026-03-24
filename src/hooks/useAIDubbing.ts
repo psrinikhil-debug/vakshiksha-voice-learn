@@ -35,48 +35,17 @@ export function useAIDubbing() {
     }
   };
 
-  const startDubbing = useCallback(async (videoFile: File, targetLang: string, sourceLang = "en") => {
-    setStatus("uploading");
-    setError(null);
-    setDubbedAudioUrl(null);
-    setProgress(0);
-    stopPolling();
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const formData = new FormData();
-      formData.append("video", videoFile);
-      formData.append("target_lang", targetLang);
-      formData.append("source_lang", sourceLang);
-
-      const res = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-dub`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: formData,
-        }
-      );
-
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || "Dubbing failed");
-
-      const dubbingId = data.dubbing_id;
+  const pollForCompletion = useCallback(
+    (dubbingId: string, targetLang: string, accessToken: string) => {
       setStatus("processing");
 
-      // Poll for status
       pollingRef.current = setInterval(async () => {
         try {
           const statusRes = await fetch(
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-dub?action=status&dubbing_id=${dubbingId}`,
             {
               headers: {
-                Authorization: `Bearer ${session.access_token}`,
+                Authorization: `Bearer ${accessToken}`,
                 apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
               },
             }
@@ -85,12 +54,11 @@ export function useAIDubbing() {
 
           if (statusData.status === "dubbed") {
             stopPolling();
-            // Download dubbed audio
             const dlRes = await fetch(
               `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-dub?action=download&dubbing_id=${dubbingId}&language_code=${targetLang}`,
               {
                 headers: {
-                  Authorization: `Bearer ${session.access_token}`,
+                  Authorization: `Bearer ${accessToken}`,
                   apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
                 },
               }
@@ -104,7 +72,7 @@ export function useAIDubbing() {
             stopPolling();
             throw new Error("Dubbing failed");
           } else {
-            setProgress(p => Math.min(p + 5, 90));
+            setProgress((p) => Math.min(p + 5, 90));
           }
         } catch (err: unknown) {
           stopPolling();
@@ -112,11 +80,97 @@ export function useAIDubbing() {
           setStatus("error");
         }
       }, 5000);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Dubbing failed");
-      setStatus("error");
-    }
-  }, []);
+    },
+    []
+  );
+
+  const startDubbing = useCallback(
+    async (videoFile: File, targetLang: string, sourceLang = "en") => {
+      setStatus("uploading");
+      setError(null);
+      setDubbedAudioUrl(null);
+      setProgress(0);
+      stopPolling();
+
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) throw new Error("Not authenticated");
+
+        const formData = new FormData();
+        formData.append("video", videoFile);
+        formData.append("target_lang", targetLang);
+        formData.append("source_lang", sourceLang);
+
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-dub`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+            },
+            body: formData,
+          }
+        );
+
+        const data = await res.json();
+        if (!res.ok || data.error)
+          throw new Error(data.error || "Dubbing failed");
+
+        pollForCompletion(data.dubbing_id, targetLang, session.access_token);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Dubbing failed");
+        setStatus("error");
+      }
+    },
+    [pollForCompletion]
+  );
+
+  const startDubbingFromUrl = useCallback(
+    async (videoUrl: string, targetLang: string, sourceLang = "en") => {
+      setStatus("uploading");
+      setError(null);
+      setDubbedAudioUrl(null);
+      setProgress(0);
+      stopPolling();
+
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) throw new Error("Not authenticated");
+
+        const res = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-dub`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              source_url: videoUrl,
+              target_lang: targetLang,
+              source_lang: sourceLang,
+            }),
+          }
+        );
+
+        const data = await res.json();
+        if (!res.ok || data.error)
+          throw new Error(data.error || "Dubbing failed");
+
+        pollForCompletion(data.dubbing_id, targetLang, session.access_token);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Dubbing failed");
+        setStatus("error");
+      }
+    },
+    [pollForCompletion]
+  );
 
   const reset = useCallback(() => {
     stopPolling();
@@ -126,5 +180,13 @@ export function useAIDubbing() {
     setDubbedAudioUrl(null);
   }, []);
 
-  return { status, progress, error, dubbedAudioUrl, startDubbing, reset };
+  return {
+    status,
+    progress,
+    error,
+    dubbedAudioUrl,
+    startDubbing,
+    startDubbingFromUrl,
+    reset,
+  };
 }

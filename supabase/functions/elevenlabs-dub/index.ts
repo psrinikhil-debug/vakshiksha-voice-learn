@@ -48,7 +48,6 @@ serve(async (req) => {
       const dubbingId = url.searchParams.get("dubbing_id");
       if (!dubbingId) throw new Error("dubbing_id required");
 
-      // Verify ownership
       const { data: job } = await supabase
         .from("dubbing_jobs")
         .select("id")
@@ -72,7 +71,6 @@ serve(async (req) => {
       const languageCode = url.searchParams.get("language_code") || "hi";
       if (!dubbingId) throw new Error("dubbing_id required");
 
-      // Verify ownership
       const { data: job } = await supabase
         .from("dubbing_jobs")
         .select("id")
@@ -96,16 +94,40 @@ serve(async (req) => {
       });
     }
 
-    // Create dubbing job
-    const formData = await req.formData();
-    const videoFile = formData.get("video") as File;
-    const targetLang = formData.get("target_lang") as string || "hi";
-    const sourceLang = formData.get("source_lang") as string || "en";
-
-    if (!videoFile) throw new Error("Video file required");
+    // Create dubbing job — supports both file upload (FormData) and URL (JSON)
+    const contentType = req.headers.get("content-type") || "";
+    let targetLang: string;
+    let sourceLang: string;
 
     const elFormData = new FormData();
-    elFormData.append("file", videoFile);
+
+    if (contentType.includes("application/json")) {
+      // URL-based dubbing
+      const body = await req.json();
+      const sourceUrl = body.source_url;
+      targetLang = body.target_lang || "hi";
+      sourceLang = body.source_lang || "en";
+
+      if (!sourceUrl || typeof sourceUrl !== "string") {
+        throw new Error("source_url is required");
+      }
+      if (sourceUrl.length > 2048) {
+        throw new Error("URL too long");
+      }
+
+      elFormData.append("source_url", sourceUrl);
+    } else {
+      // File-based dubbing
+      const formData = await req.formData();
+      const videoFile = formData.get("video") as File;
+      targetLang = (formData.get("target_lang") as string) || "hi";
+      sourceLang = (formData.get("source_lang") as string) || "en";
+
+      if (!videoFile) throw new Error("Video file required");
+
+      elFormData.append("file", videoFile);
+    }
+
     elFormData.append("target_lang", targetLang);
     elFormData.append("source_lang", sourceLang);
     elFormData.append("mode", "automatic");
