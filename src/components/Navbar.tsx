@@ -21,7 +21,7 @@ const Navbar = () => {
       animate={{ opacity: 1, y: 0 }}
       className="fixed top-0 left-0 right-0 z-50 gradient-glass border-b border-border/30"
     >
-      <div className="container max-w-6xl mx-auto flex items-center justify-between h-16 px-4">
+      <div className="container max-w-6xl mx-auto flex items-center justify-between h-20 px-4">
         <a href="#" className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-lg gradient-hero flex items-center justify-center">
             <Mic className="w-4 h-4 text-primary-foreground" />
