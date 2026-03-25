@@ -25,7 +25,9 @@ TECHNOLOGY USED :
 #MURFAI 
 Geminiai 
 Lovable 
-2)Clear explanation of API usage 
+
+
+2)CLEAR EXPLANATION OF API USAGE
 • We used text-to-speech FALCON murf api key for  the text-to-speech  version 
 • We used dubbing murf api key for the audio dubbing in pro version 
 • We used razor pay api key to access the pro subscription
