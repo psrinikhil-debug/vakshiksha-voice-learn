@@ -53,6 +53,16 @@ serve(async (req) => {
       );
     }
 
+    if (question.length > 500) {
+      return new Response(
+        JSON.stringify({ error: "Question too long (max 500 chars)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Cap conversation history to prevent token abuse
+    const history = (conversationHistory || []).slice(0, 10);
+
     // Step 1: Get AI answer using Lovable AI
     const messages = [
       {
@@ -67,7 +77,7 @@ Rules:
 - If you don't know something, say so honestly
 - For educational topics, explain concepts simply and memorably`,
       },
-      ...(conversationHistory || []),
+      ...history,
       { role: "user", content: question.trim() },
     ];
 
@@ -99,7 +109,8 @@ Rules:
         );
       }
       const errText = await aiResponse.text();
-      throw new Error(`AI gateway error [${aiResponse.status}]: ${errText}`);
+      console.error("AI gateway error:", aiResponse.status, errText);
+      throw new Error("Failed to get answer. Please try again.");
     }
 
     const aiData = await aiResponse.json();
@@ -153,8 +164,10 @@ Rules:
   } catch (error: unknown) {
     console.error("Voice QA error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
+    const safeMsg = msg.includes("max 500") || msg.includes("Please try again") || msg.includes("not configured")
+      ? msg : "Voice assistant error. Please try again.";
     return new Response(
-      JSON.stringify({ error: msg }),
+      JSON.stringify({ error: safeMsg }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

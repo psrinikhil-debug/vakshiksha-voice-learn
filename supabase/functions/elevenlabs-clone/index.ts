@@ -59,7 +59,10 @@ serve(async (req) => {
     });
 
     const data = await response.json();
-    if (!response.ok) throw new Error(`ElevenLabs error: ${JSON.stringify(data)}`);
+    if (!response.ok) {
+      console.error("ElevenLabs clone error:", JSON.stringify(data));
+      throw new Error("Voice cloning failed. Please try again.");
+    }
 
     // Save to DB
     const adminClient = createClient(
@@ -77,8 +80,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
+    console.error("Voice clone error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
+    const safeMsg = msg.includes("required") || msg.includes("Not authenticated") || msg.includes("Pro subscription") || msg.includes("Please try again")
+      ? msg : "Voice cloning error. Please try again.";
+    return new Response(JSON.stringify({ error: safeMsg }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

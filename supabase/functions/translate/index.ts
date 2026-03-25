@@ -49,6 +49,13 @@ serve(async (req) => {
       );
     }
 
+    if (text.length > 2000) {
+      return new Response(
+        JSON.stringify({ error: "Text too long (max 2000 chars)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const response = await fetch(AI_GATEWAY_URL, {
       method: "POST",
       headers: {
@@ -109,7 +116,8 @@ serve(async (req) => {
         );
       }
       const errText = await response.text();
-      throw new Error(`AI gateway error [${response.status}]: ${errText}`);
+      console.error("AI gateway error:", response.status, errText);
+      throw new Error("Translation failed. Please try again.");
     }
 
     const data = await response.json();
@@ -128,8 +136,10 @@ serve(async (req) => {
   } catch (error: unknown) {
     console.error("Translation error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
+    const safeMsg = msg.includes("max 2000") || msg.includes("Please try again") || msg.includes("not configured")
+      ? msg : "Translation failed. Please try again.";
     return new Response(
-      JSON.stringify({ error: msg }),
+      JSON.stringify({ error: safeMsg }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

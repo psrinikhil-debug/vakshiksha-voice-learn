@@ -48,7 +48,10 @@ serve(async (req) => {
       });
 
       const order = await res.json();
-      if (!res.ok) throw new Error(`Razorpay error: ${JSON.stringify(order)}`);
+      if (!res.ok) {
+        console.error("Razorpay order error:", JSON.stringify(order));
+        throw new Error("Payment provider error. Please try again.");
+      }
 
       return new Response(JSON.stringify({ order, keyId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -101,8 +104,11 @@ serve(async (req) => {
 
     throw new Error("Invalid action");
   } catch (error: unknown) {
+    console.error("Razorpay error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
+    const safeMsg = msg.includes("Payment") || msg.includes("Not authenticated") || msg.includes("Invalid action")
+      ? msg : "Payment error. Please try again.";
+    return new Response(JSON.stringify({ error: safeMsg }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

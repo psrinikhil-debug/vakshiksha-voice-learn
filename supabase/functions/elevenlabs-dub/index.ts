@@ -140,7 +140,10 @@ serve(async (req) => {
     });
 
     const data = await response.json();
-    if (!response.ok) throw new Error(`ElevenLabs dubbing error: ${JSON.stringify(data)}`);
+    if (!response.ok) {
+      console.error("ElevenLabs dubbing error:", JSON.stringify(data));
+      throw new Error("Video dubbing failed. Please try again.");
+    }
 
     // Store dubbing job for ownership tracking
     const { error: insertError } = await supabase
@@ -159,8 +162,11 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
+    console.error("Dubbing error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
+    const safeMsg = msg.includes("required") || msg.includes("Not authenticated") || msg.includes("Pro subscription") || msg.includes("Please try again") || msg.includes("not found") || msg.includes("URL too long")
+      ? msg : "Dubbing error. Please try again.";
+    return new Response(JSON.stringify({ error: safeMsg }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
