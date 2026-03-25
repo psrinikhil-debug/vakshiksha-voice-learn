@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Crown, Languages, Mic, Loader2, LogOut, ArrowLeft } from "lucide-react";
+import { Crown, Languages, Mic, Loader2, LogOut, ArrowLeft, MessageSquare, ScanLine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useProSubscription } from "@/hooks/useProSubscription";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,12 +8,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import DubbingSection from "@/components/pro/DubbingSection";
 import VoiceCloneSection from "@/components/pro/VoiceCloneSection";
+import ProChatSection from "@/components/pro/ProChatSection";
+import ScannerSection from "@/components/pro/ScannerSection";
 
-type ProTab = "dubbing" | "clone";
+type ProTab = "chat" | "dubbing" | "clone" | "scanner";
 
 const Pro = () => {
   const { isPro, loading, paying, user, subscribe } = useProSubscription();
-  const [activeTab, setActiveTab] = useState<ProTab>("dubbing");
+  const [activeTab, setActiveTab] = useState<ProTab>("chat");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -130,15 +132,17 @@ const Pro = () => {
           /* Pro Features */
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             {/* Tabs */}
-            <div className="flex items-center gap-2 mb-8">
+            <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-1">
               {[
+                { id: "chat" as ProTab, icon: MessageSquare, label: "AI Chat" },
                 { id: "dubbing" as ProTab, icon: Languages, label: "AI Dubbing" },
                 { id: "clone" as ProTab, icon: Mic, label: "Voice Clone" },
+                { id: "scanner" as ProTab, icon: ScanLine, label: "Scanner" },
               ].map(({ id, icon: Icon, label }) => (
                 <button
                   key={id}
                   onClick={() => setActiveTab(id)}
-                  className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 ${
+                  className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap ${
                     activeTab === id
                       ? "gradient-hero text-primary-foreground"
                       : "bg-muted text-muted-foreground hover:text-foreground"
@@ -151,7 +155,10 @@ const Pro = () => {
             </div>
 
             <div className="bg-card rounded-3xl p-6 md:p-8 shadow-card border border-border/50">
-              {activeTab === "dubbing" ? <DubbingSection /> : <VoiceCloneSection />}
+              {activeTab === "chat" && user && <ProChatSection userId={user.id} />}
+              {activeTab === "dubbing" && <DubbingSection />}
+              {activeTab === "clone" && <VoiceCloneSection />}
+              {activeTab === "scanner" && <ScannerSection />}
             </div>
           </motion.div>
         )}

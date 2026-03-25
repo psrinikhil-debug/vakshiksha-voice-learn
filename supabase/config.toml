@@ -21,5 +21,8 @@ verify_jwt = false
 [functions.check-pro]
 verify_jwt = false
 
+[functions.pro-chat]
+verify_jwt = false
+
 [auth]
 leaked_password_protection = "enabled"
