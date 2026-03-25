@@ -13,8 +13,8 @@ serve(async (req) => {
   }
 
   try {
-    const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
-    if (!ELEVENLABS_API_KEY) throw new Error("ElevenLabs API key not configured");
+    const ELEVENLABS_API_KEY = Deno.env.get("Vaksiksha_dubbing");
+    if (!ELEVENLABS_API_KEY) throw new Error("Vaksiksha dubbing API key not configured");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Not authenticated");
