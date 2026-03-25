@@ -51,6 +51,13 @@ serve(async (req) => {
       );
     }
 
+    if (text.length > 2000) {
+      return new Response(
+        JSON.stringify({ error: "Text too long (max 2000 chars)" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const body: Record<string, unknown> = {
       text: text.trim(),
       voiceId: voiceId || "en-US-natalie",
@@ -74,7 +81,8 @@ serve(async (req) => {
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(`Murf API error [${response.status}]: ${JSON.stringify(data)}`);
+      console.error("Murf API error:", JSON.stringify(data));
+      throw new Error("Voice generation failed. Please try again.");
     }
 
     return new Response(JSON.stringify(data), {
@@ -84,7 +92,9 @@ serve(async (req) => {
   } catch (error: unknown) {
     console.error("Murf TTS error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
+    const safeMsg = msg.includes("not configured") || msg.includes("max 2000") || msg.includes("Please try again")
+      ? msg : "Voice generation failed. Please try again.";
+    return new Response(JSON.stringify({ error: safeMsg }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

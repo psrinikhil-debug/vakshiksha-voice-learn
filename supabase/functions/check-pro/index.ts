@@ -35,7 +35,7 @@ serve(async (req) => {
 
     const { data: sub } = await supabase
       .from("pro_subscriptions")
-      .select("*")
+      .select("expires_at, starts_at, status")
       .eq("user_id", user.id)
       .eq("status", "active")
       .gte("expires_at", new Date().toISOString())
@@ -43,7 +43,7 @@ serve(async (req) => {
       .limit(1)
       .single();
 
-    return new Response(JSON.stringify({ isPro: !!sub, subscription: sub }), {
+    return new Response(JSON.stringify({ isPro: !!sub, expiresAt: sub?.expires_at ?? null }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
