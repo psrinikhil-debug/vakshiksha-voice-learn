@@ -47,6 +47,17 @@ serve(async (req) => {
 
     if (!name || !audioFile) throw new Error("Name and audio file required");
 
+    // Validate file size (max 10 MB)
+    const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
+    if (audioFile.size > MAX_AUDIO_BYTES) {
+      throw new Error("Audio file too large (max 10 MB)");
+    }
+
+    // Validate MIME type
+    if (!audioFile.type.startsWith("audio/")) {
+      throw new Error("Invalid file type. Please upload an audio file.");
+    }
+
     // Clone voice via ElevenLabs
     const elFormData = new FormData();
     elFormData.append("name", name);
