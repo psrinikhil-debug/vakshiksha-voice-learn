@@ -78,11 +78,12 @@ const ProChatSection = ({ userId }: ProChatSectionProps) => {
     preview: string;
   } | null>(null);
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const supportsSTT = typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+  const supportsSTT = typeof window !== "undefined" && getSpeechRecognition() !== null;
 
   const toggleListening = useCallback(() => {
     if (isListening) {
@@ -91,10 +92,10 @@ const ProChatSection = ({ userId }: ProChatSectionProps) => {
       return;
     }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return;
+    const SpeechRecognitionCtor = getSpeechRecognition();
+    if (!SpeechRecognitionCtor) return;
 
-    const recognition = new SpeechRecognition();
+    const recognition = new SpeechRecognitionCtor();
     recognition.lang = "en-US";
     recognition.interimResults = true;
     recognition.continuous = true;
