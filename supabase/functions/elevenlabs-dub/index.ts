@@ -125,6 +125,17 @@ serve(async (req) => {
 
       if (!videoFile) throw new Error("Video file required");
 
+      // Validate file size (max 100 MB)
+      const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+      if (videoFile.size > MAX_VIDEO_BYTES) {
+        throw new Error("Video file too large (max 100 MB)");
+      }
+
+      // Validate MIME type
+      if (!videoFile.type.startsWith("video/") && !videoFile.type.startsWith("audio/")) {
+        throw new Error("Invalid file type. Please upload a video or audio file.");
+      }
+
       elFormData.append("file", videoFile);
     }
 
