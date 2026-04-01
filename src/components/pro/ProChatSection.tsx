@@ -16,13 +16,10 @@ import { Button } from "@/components/ui/button";
 import { useProChat, ChatMessage } from "@/hooks/useProChat";
 import ReactMarkdown from "react-markdown";
 
-declare global {
-  interface Window {
-    SpeechRecognition: typeof SpeechRecognition;
-    webkitSpeechRecognition: typeof SpeechRecognition;
-  }
-}
-import ReactMarkdown from "react-markdown";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getSpeechRecognition = (): (new () => any) | null => {
+  return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
+};
 
 interface ProChatSectionProps {
   userId: string;
