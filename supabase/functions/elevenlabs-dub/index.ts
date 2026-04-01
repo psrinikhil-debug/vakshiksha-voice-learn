@@ -125,6 +125,17 @@ serve(async (req) => {
 
       if (!videoFile) throw new Error("Video file required");
 
+      // Validate file size (max 100 MB)
+      const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
+      if (videoFile.size > MAX_VIDEO_BYTES) {
+        throw new Error("Video file too large (max 100 MB)");
+      }
+
+      // Validate MIME type
+      if (!videoFile.type.startsWith("video/") && !videoFile.type.startsWith("audio/")) {
+        throw new Error("Invalid file type. Please upload a video or audio file.");
+      }
+
       elFormData.append("file", videoFile);
     }
 
@@ -164,7 +175,7 @@ serve(async (req) => {
   } catch (error: unknown) {
     console.error("Dubbing error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
-    const safeMsg = msg.includes("required") || msg.includes("Not authenticated") || msg.includes("Pro subscription") || msg.includes("Please try again") || msg.includes("not found") || msg.includes("URL too long")
+    const safeMsg = msg.includes("required") || msg.includes("Not authenticated") || msg.includes("Pro subscription") || msg.includes("Please try again") || msg.includes("not found") || msg.includes("URL too long") || msg.includes("too large") || msg.includes("Invalid file type")
       ? msg : "Dubbing error. Please try again.";
     return new Response(JSON.stringify({ error: safeMsg }), {
       status: 400,
