@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Send,
@@ -9,10 +9,17 @@ import {
   Bot,
   User,
   X,
+  Mic,
+  MicOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useProChat, ChatMessage } from "@/hooks/useProChat";
 import ReactMarkdown from "react-markdown";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const getSpeechRecognition = (): (new () => any) | null => {
+  return (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition || null;
+};
 
 interface ProChatSectionProps {
   userId: string;
@@ -70,8 +77,44 @@ const ProChatSection = ({ userId }: ProChatSectionProps) => {
     file: File;
     preview: string;
   } | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const supportsSTT = typeof window !== "undefined" && getSpeechRecognition() !== null;
+
+  const toggleListening = useCallback(() => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognitionCtor = getSpeechRecognition();
+    if (!SpeechRecognitionCtor) return;
+
+    const recognition = new SpeechRecognitionCtor();
+    recognition.lang = "en-US";
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript;
+      }
+      setInput(transcript);
+    };
+
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [isListening]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -223,11 +266,21 @@ const ProChatSection = ({ userId }: ProChatSectionProps) => {
         >
           <ImagePlus className="w-5 h-5" />
         </Button>
+        {supportsSTT && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`flex-shrink-0 ${isListening ? "text-destructive animate-pulse" : "text-muted-foreground hover:text-primary"}`}
+            onClick={toggleListening}
+          >
+            {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+          </Button>
+        )}
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
+          placeholder={isListening ? "Listening..." : "Type a message..."}
           rows={1}
           className="flex-1 resize-none rounded-xl border border-border bg-background px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30 outline-none min-h-[40px] max-h-[120px]"
         />
