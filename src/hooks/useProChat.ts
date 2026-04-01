@@ -113,7 +113,7 @@ export function useProChat(userId: string | undefined) {
     async (file: File): Promise<string | null> => {
       if (!userId) return null;
       const ext = file.name.split(".").pop();
-      const path = `${userId}/${Date.now()}.${ext}`;
+      const path = `${userId}/${crypto.randomUUID()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("chat-uploads")
@@ -124,8 +124,16 @@ export function useProChat(userId: string | undefined) {
         return null;
       }
 
-      const { data } = supabase.storage.from("chat-uploads").getPublicUrl(path);
-      return data.publicUrl;
+      const { data, error: signError } = await supabase.storage
+        .from("chat-uploads")
+        .createSignedUrl(path, 3600); // 1 hour TTL
+
+      if (signError || !data?.signedUrl) {
+        setError("Failed to get image URL");
+        return null;
+      }
+
+      return data.signedUrl;
     },
     [userId]
   );

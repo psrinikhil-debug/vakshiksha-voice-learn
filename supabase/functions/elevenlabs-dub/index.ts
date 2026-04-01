@@ -175,7 +175,7 @@ serve(async (req) => {
   } catch (error: unknown) {
     console.error("Dubbing error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
-    const safeMsg = msg.includes("required") || msg.includes("Not authenticated") || msg.includes("Pro subscription") || msg.includes("Please try again") || msg.includes("not found") || msg.includes("URL too long")
+    const safeMsg = msg.includes("required") || msg.includes("Not authenticated") || msg.includes("Pro subscription") || msg.includes("Please try again") || msg.includes("not found") || msg.includes("URL too long") || msg.includes("too large") || msg.includes("Invalid file type")
       ? msg : "Dubbing error. Please try again.";
     return new Response(JSON.stringify({ error: safeMsg }), {
       status: 400,

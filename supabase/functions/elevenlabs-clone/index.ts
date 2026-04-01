@@ -93,7 +93,7 @@ serve(async (req) => {
   } catch (error: unknown) {
     console.error("Voice clone error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
-    const safeMsg = msg.includes("required") || msg.includes("Not authenticated") || msg.includes("Pro subscription") || msg.includes("Please try again")
+    const safeMsg = msg.includes("required") || msg.includes("Not authenticated") || msg.includes("Pro subscription") || msg.includes("Please try again") || msg.includes("too large") || msg.includes("Invalid file type")
       ? msg : "Voice cloning error. Please try again.";
     return new Response(JSON.stringify({ error: safeMsg }), {
       status: 400,
