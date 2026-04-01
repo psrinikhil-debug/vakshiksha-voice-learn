@@ -16,6 +16,14 @@ import { Button } from "@/components/ui/button";
 import { useProChat, ChatMessage } from "@/hooks/useProChat";
 import ReactMarkdown from "react-markdown";
 
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
+  }
+}
+import ReactMarkdown from "react-markdown";
+
 interface ProChatSectionProps {
   userId: string;
 }
