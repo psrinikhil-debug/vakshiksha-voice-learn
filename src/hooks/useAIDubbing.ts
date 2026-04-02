@@ -55,7 +55,7 @@ export function useAIDubbing() {
           if (statusData.status === "dubbed") {
             stopPolling();
             const dlRes = await fetch(
-              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-dub?action=download&dubbing_id=${dubbingId}&language_code=${targetLang}`,
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/murf-dub?action=download&dubbing_id=${dubbingId}&language_code=${targetLang}`,&dubbing_id=${dubbingId}&language_code=${targetLang}`,
               {
                 headers: {
                   Authorization: `Bearer ${accessToken}`,
