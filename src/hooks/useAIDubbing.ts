@@ -104,7 +104,7 @@ export function useAIDubbing() {
         formData.append("source_lang", sourceLang);
 
         const res = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-dub`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/murf-dub`,
           {
             method: "POST",
             headers: {
