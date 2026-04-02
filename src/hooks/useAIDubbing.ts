@@ -42,7 +42,7 @@ export function useAIDubbing() {
       pollingRef.current = setInterval(async () => {
         try {
           const statusRes = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/murf-dub?action=status&dubbing_id=${dubbingId}`,&dubbing_id=${dubbingId}`,
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/murf-dub?action=status&dubbing_id=${dubbingId}`,
             {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
