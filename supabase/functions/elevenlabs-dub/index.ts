@@ -13,8 +13,8 @@ serve(async (req) => {
   }
 
   try {
-    const ELEVENLABS_API_KEY = Deno.env.get("AI_VIDEO_DUBBING_API_KEY");
-    if (!ELEVENLABS_API_KEY) throw new Error("AI video dubbing API key not configured");
+    const MURF_API_KEY = Deno.env.get("AI_VIDEO_DUBBING_API_KEY");
+    if (!MURF_API_KEY) throw new Error("AI video dubbing API key not configured");
 
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) throw new Error("Not authenticated");
@@ -44,6 +44,7 @@ serve(async (req) => {
     const url = new URL(req.url);
     const action = url.searchParams.get("action");
 
+    // Check dubbing status
     if (action === "status") {
       const dubbingId = url.searchParams.get("dubbing_id");
       if (!dubbingId) throw new Error("dubbing_id required");
@@ -56,16 +57,24 @@ serve(async (req) => {
       if (!job) throw new Error("Dubbing job not found or access denied");
 
       const statusRes = await fetch(
-        `https://api.elevenlabs.io/v1/dubbing/${dubbingId}`,
-        { headers: { "xi-api-key": ELEVENLABS_API_KEY } }
+        `https://api.murf.ai/v1/video/dub/${dubbingId}`,
+        {
+          method: "GET",
+          headers: { "api-key": MURF_API_KEY },
+        }
       );
       const statusData = await statusRes.json();
+      console.log("Murf status response:", JSON.stringify(statusData));
 
-      return new Response(JSON.stringify(statusData), {
+      // Normalize status for frontend: map Murf statuses to our expected format
+      const normalizedStatus = statusData.status === "completed" ? "dubbed" : statusData.status;
+
+      return new Response(JSON.stringify({ ...statusData, status: normalizedStatus }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // Download dubbed audio
     if (action === "download") {
       const dubbingId = url.searchParams.get("dubbing_id");
       const languageCode = url.searchParams.get("language_code") || "hi";
@@ -78,11 +87,22 @@ serve(async (req) => {
         .single();
       if (!job) throw new Error("Dubbing job not found or access denied");
 
-      const dlRes = await fetch(
-        `https://api.elevenlabs.io/v1/dubbing/${dubbingId}/audio/${languageCode}`,
-        { headers: { "xi-api-key": ELEVENLABS_API_KEY } }
+      // Get the dubbed result from Murf
+      const resultRes = await fetch(
+        `https://api.murf.ai/v1/video/dub/${dubbingId}`,
+        {
+          method: "GET",
+          headers: { "api-key": MURF_API_KEY },
+        }
       );
+      const resultData = await resultRes.json();
+      console.log("Murf download result:", JSON.stringify(resultData));
 
+      // Murf returns a download URL in the response
+      const downloadUrl = resultData.audio_url || resultData.output_url || resultData.url;
+      if (!downloadUrl) throw new Error("No download URL available yet");
+
+      const dlRes = await fetch(downloadUrl);
       if (!dlRes.ok) throw new Error(`Download failed: ${dlRes.status}`);
 
       return new Response(dlRes.body, {
@@ -94,30 +114,26 @@ serve(async (req) => {
       });
     }
 
-    // Create dubbing job — supports both file upload (FormData) and URL (JSON)
+    // Create dubbing job — supports both file upload and URL
     const contentType = req.headers.get("content-type") || "";
     let targetLang: string;
     let sourceLang: string;
-
-    const elFormData = new FormData();
+    let videoUrl: string | null = null;
 
     if (contentType.includes("application/json")) {
-      // URL-based dubbing
       const body = await req.json();
-      const sourceUrl = body.source_url;
+      videoUrl = body.source_url;
       targetLang = body.target_lang || "hi";
       sourceLang = body.source_lang || "en";
 
-      if (!sourceUrl || typeof sourceUrl !== "string") {
+      if (!videoUrl || typeof videoUrl !== "string") {
         throw new Error("source_url is required");
       }
-      if (sourceUrl.length > 2048) {
+      if (videoUrl.length > 2048) {
         throw new Error("URL too long");
       }
-
-      elFormData.append("source_url", sourceUrl);
     } else {
-      // File-based dubbing
+      // File upload: store in Supabase storage to get a public URL
       const formData = await req.formData();
       const videoFile = formData.get("video") as File;
       targetLang = (formData.get("target_lang") as string) || "hi";
@@ -125,57 +141,88 @@ serve(async (req) => {
 
       if (!videoFile) throw new Error("Video file required");
 
-      // Validate file size (max 100 MB)
       const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
       if (videoFile.size > MAX_VIDEO_BYTES) {
         throw new Error("Video file too large (max 100 MB)");
       }
-
-      // Validate MIME type
       if (!videoFile.type.startsWith("video/") && !videoFile.type.startsWith("audio/")) {
         throw new Error("Invalid file type. Please upload a video or audio file.");
       }
 
-      elFormData.append("file", videoFile);
+      // Upload to Supabase storage to get a public URL for Murf
+      const serviceClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+
+      const fileName = `dubbing/${user.id}/${Date.now()}_${videoFile.name}`;
+      const arrayBuffer = await videoFile.arrayBuffer();
+      const { error: uploadError } = await serviceClient.storage
+        .from("chat-uploads")
+        .upload(fileName, arrayBuffer, { contentType: videoFile.type, upsert: true });
+
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError);
+        throw new Error("Failed to upload video. Please try again.");
+      }
+
+      const { data: publicUrlData } = serviceClient.storage
+        .from("chat-uploads")
+        .getPublicUrl(fileName);
+
+      videoUrl = publicUrlData.publicUrl;
     }
 
-    elFormData.append("target_lang", targetLang);
-    elFormData.append("source_lang", sourceLang);
-    elFormData.append("mode", "automatic");
-    elFormData.append("num_speakers", "0");
+    // Call Murf Video Dubbing API
+    const murfBody = {
+      video_url: videoUrl,
+      target_language: targetLang,
+      source_language: sourceLang,
+    };
 
-    const response = await fetch("https://api.elevenlabs.io/v1/dubbing", {
+    console.log("Calling Murf dub API with:", JSON.stringify(murfBody));
+
+    const response = await fetch("https://api.murf.ai/v1/video/dub", {
       method: "POST",
-      headers: { "xi-api-key": ELEVENLABS_API_KEY },
-      body: elFormData,
+      headers: {
+        "api-key": MURF_API_KEY,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(murfBody),
     });
 
     const data = await response.json();
+    console.log("Murf dub response:", JSON.stringify(data));
+
     if (!response.ok) {
-      console.error("ElevenLabs dubbing error:", JSON.stringify(data));
-      throw new Error("Video dubbing failed. Please try again.");
+      const murfError = data?.error?.message || data?.message || data?.error || "Video dubbing failed";
+      console.error("Murf dubbing error:", JSON.stringify(data));
+      throw new Error(typeof murfError === "string" ? murfError : "Video dubbing failed. Please try again.");
     }
 
-    // Store dubbing job for ownership tracking
-    const { error: insertError } = await supabase
-      .from("dubbing_jobs")
-      .insert({
-        user_id: user.id,
-        dubbing_id: data.dubbing_id,
-        target_lang: targetLang,
-        source_lang: sourceLang,
-      });
-    if (insertError) {
-      console.error("Failed to store dubbing job:", insertError);
+    // Store dubbing job — use Murf's job/task ID
+    const dubbingId = data.dubbing_id || data.id || data.task_id;
+    if (dubbingId) {
+      const { error: insertError } = await supabase
+        .from("dubbing_jobs")
+        .insert({
+          user_id: user.id,
+          dubbing_id: String(dubbingId),
+          target_lang: targetLang,
+          source_lang: sourceLang,
+        });
+      if (insertError) {
+        console.error("Failed to store dubbing job:", insertError);
+      }
     }
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify({ ...data, dubbing_id: dubbingId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
     console.error("Dubbing error:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
-    const safeMsg = msg.includes("required") || msg.includes("Not authenticated") || msg.includes("Pro subscription") || msg.includes("Please try again") || msg.includes("not found") || msg.includes("URL too long") || msg.includes("too large") || msg.includes("Invalid file type")
+    const safeMsg = msg.includes("required") || msg.includes("Not authenticated") || msg.includes("Pro subscription") || msg.includes("Please try again") || msg.includes("not found") || msg.includes("URL too long") || msg.includes("too large") || msg.includes("Invalid file type") || msg.includes("not configured") || msg.includes("Failed to upload")
       ? msg : "Dubbing error. Please try again.";
     return new Response(JSON.stringify({ error: safeMsg }), {
       status: 400,
