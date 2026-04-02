@@ -143,7 +143,7 @@ export function useAIDubbing() {
         if (!session) throw new Error("Not authenticated");
 
         const res = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-dub`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/murf-dub`,
           {
             method: "POST",
             headers: {
