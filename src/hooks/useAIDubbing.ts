@@ -42,7 +42,7 @@ export function useAIDubbing() {
       pollingRef.current = setInterval(async () => {
         try {
           const statusRes = await fetch(
-            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-dub?action=status&dubbing_id=${dubbingId}`,
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/murf-dub?action=status&dubbing_id=${dubbingId}`,
             {
               headers: {
                 Authorization: `Bearer ${accessToken}`,
@@ -55,7 +55,7 @@ export function useAIDubbing() {
           if (statusData.status === "dubbed") {
             stopPolling();
             const dlRes = await fetch(
-              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-dub?action=download&dubbing_id=${dubbingId}&language_code=${targetLang}`,
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/murf-dub?action=download&dubbing_id=${dubbingId}&language_code=${targetLang}`,
               {
                 headers: {
                   Authorization: `Bearer ${accessToken}`,
@@ -104,7 +104,7 @@ export function useAIDubbing() {
         formData.append("source_lang", sourceLang);
 
         const res = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-dub`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/murf-dub`,
           {
             method: "POST",
             headers: {
@@ -143,7 +143,7 @@ export function useAIDubbing() {
         if (!session) throw new Error("Not authenticated");
 
         const res = await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/elevenlabs-dub`,
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/murf-dub`,
           {
             method: "POST",
             headers: {
