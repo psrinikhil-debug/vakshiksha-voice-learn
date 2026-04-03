@@ -7,6 +7,7 @@ import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import Pro from "./pages/Pro.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import ExtensionDownload from "./pages/ExtensionDownload.tsx";
 
 const queryClient = new QueryClient();
 
