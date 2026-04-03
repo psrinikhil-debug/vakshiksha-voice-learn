@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 340px;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e4e4e7;
+    }
+    .header {
+      background: linear-gradient(135deg, #06b6d4, #6366f1);
+      padding: 16px;
+      text-align: center;
+    }
+    .header h1 { font-size: 16px; font-weight: 700; color: #fff; }
+    .header p { font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px; }
+    .content { padding: 16px; }
+    .login-section, .main-section { display: none; }
+    .login-section.active, .main-section.active { display: block; }
+    label { display: block; font-size: 12px; color: #a1a1aa; margin-bottom: 4px; margin-top: 12px; }
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #27272a;
+      background: #18181b;
+      color: #e4e4e7;
+      font-size: 13px;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: #06b6d4; }
+    .btn {
+      width: 100%;
+      padding: 11px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 16px;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn-primary { background: linear-gradient(135deg, #06b6d4, #6366f1); color: #fff; }
+    .btn-danger { background: #dc2626; color: #fff; font-size: 11px; padding: 8px; margin-top: 8px; }
+    .status { font-size: 12px; text-align: center; margin-top: 12px; padding: 8px; border-radius: 6px; }
+    .status.error { background: #dc262620; color: #fca5a5; }
+    .status.success { background: #16a34a20; color: #86efac; }
+    .status.info { background: #06b6d420; color: #67e8f9; }
+    .user-info { display: flex; align-items: center; gap: 8px; background: #18181b; padding: 10px 12px; border-radius: 8px; }
+    .user-info .avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, #06b6d4, #6366f1); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .user-info .email { font-size: 12px; color: #a1a1aa; overflow: hidden; text-overflow: ellipsis; }
+    .user-info .pro-badge { font-size: 10px; background: linear-gradient(135deg, #06b6d4, #6366f1); color: #fff; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+    .divider { height: 1px; background: #27272a; margin: 16px 0; }
+    .instructions { font-size: 11px; color: #71717a; line-height: 1.5; }
+    .instructions strong { color: #a1a1aa; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎬 Vakshiksha AI Dubbing</h1>
+    <p>Dub any video on the web instantly</p>
+  </div>
+  <div class="content">
+    <!-- Login Section -->
+    <div id="loginSection" class="login-section active">
+      <label>Email</label>
+      <input type="email" id="email" placeholder="you@example.com">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="••••••••">
+      <button class="btn btn-primary" id="loginBtn">Sign In</button>
+      <div id="loginStatus" class="status" style="display:none"></div>
+    </div>
+
+    <!-- Main Section -->
+    <div id="mainSection" class="main-section">
+      <div class="user-info">
+        <div class="avatar" id="avatarLetter">V</div>
+        <div style="flex:1;min-width:0">
+          <div class="email" id="userEmail"></div>
+          <div class="pro-badge" id="proBadge" style="display:none">PRO</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+
+      <label>Target Language</label>
+      <select id="targetLang">
+        <option value="hi">Hindi</option>
+        <option value="es">Spanish</option>
+        <option value="fr">French</option>
+        <option value="de">German</option>
+        <option value="ja">Japanese</option>
+        <option value="ko">Korean</option>
+        <option value="pt">Portuguese</option>
+        <option value="zh">Chinese</option>
+        <option value="ar">Arabic</option>
+        <option value="ru">Russian</option>
+        <option value="it">Italian</option>
+        <option value="tr">Turkish</option>
+        <option value="ta">Tamil</option>
+      </select>
+
+      <button class="btn btn-primary" id="dubBtn">🎙️ Dub Current Video</button>
+      <div id="mainStatus" class="status" style="display:none"></div>
+
+      <div class="divider"></div>
+      <div class="instructions">
+        <strong>How to use:</strong><br>
+        1. Navigate to a page with a video<br>
+        2. Select your target language<br>
+        3. Click "Dub Current Video"<br>
+        4. The dubbed audio will play over the original
+      </div>
+
+      <button class="btn btn-danger" id="logoutBtn">Sign Out</button>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

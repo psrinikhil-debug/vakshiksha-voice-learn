@@ -7,6 +7,7 @@ import Index from "./pages/Index.tsx";
 import Auth from "./pages/Auth.tsx";
 import Pro from "./pages/Pro.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import ExtensionDownload from "./pages/ExtensionDownload.tsx";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/pro" element={<Pro />} />
+          <Route path="/extension" element={<ExtensionDownload />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
