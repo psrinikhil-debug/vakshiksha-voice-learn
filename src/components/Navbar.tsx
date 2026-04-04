@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mic, Menu, X, Sun, Moon, Crown } from "lucide-react";
+import { Mic, Menu, X, Sun, Moon, Crown, Download } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { Link } from "react-router-dom";
 
