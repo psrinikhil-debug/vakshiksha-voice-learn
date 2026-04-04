@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Crown, Languages, Mic, Loader2, LogOut, ArrowLeft, MessageSquare, ScanLine } from "lucide-react";
+import { Crown, Languages, Mic, Loader2, LogOut, ArrowLeft, MessageSquare, ScanLine, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useProSubscription } from "@/hooks/useProSubscription";
 import { supabase } from "@/integrations/supabase/client";
@@ -68,6 +68,9 @@ const Pro = () => {
             )}
           </div>
           <div className="flex items-center gap-3">
+            <Link to="/extension" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+              <Download className="w-3.5 h-3.5" /> Extension
+            </Link>
             <span className="text-sm text-muted-foreground hidden sm:block">{user?.email}</span>
             <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1.5">
               <LogOut className="w-4 h-4" /> Sign Out

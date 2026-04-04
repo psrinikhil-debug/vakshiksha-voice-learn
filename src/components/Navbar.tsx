@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Mic, Menu, X, Sun, Moon, Crown } from "lucide-react";
+import { Mic, Menu, X, Sun, Moon, Crown, Download } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { Link } from "react-router-dom";
 
@@ -43,6 +43,12 @@ const Navbar = () => {
           >
             {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
+          <Link
+            to="/extension"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+          >
+            <Download className="w-3.5 h-3.5" /> Extension
+          </Link>
           <Link
             to="/pro"
             className="px-5 py-2 rounded-full gradient-warm text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-1.5"
@@ -88,6 +94,13 @@ const Navbar = () => {
             >
               {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
+            <Link
+              to="/extension"
+              onClick={() => setOpen(false)}
+              className="px-4 py-2.5 rounded-full bg-muted text-foreground text-sm font-semibold text-center flex items-center justify-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" /> Extension
+            </Link>
             <Link
               to="/pro"
               onClick={() => setOpen(false)}
