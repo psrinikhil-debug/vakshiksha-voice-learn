@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Crown, Languages, Mic, Loader2, LogOut, ArrowLeft, MessageSquare, ScanLine } from "lucide-react";
+import { Crown, Languages, Mic, Loader2, LogOut, ArrowLeft, MessageSquare, ScanLine, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useProSubscription } from "@/hooks/useProSubscription";
 import { supabase } from "@/integrations/supabase/client";
