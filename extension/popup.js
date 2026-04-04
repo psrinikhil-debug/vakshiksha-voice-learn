@@ -36,8 +36,48 @@ function showStatus(el, msg, type) {
   el.style.display = "block";
 }
 
+// --- Update check ---
+async function checkAndShowUpdate() {
+  const { updateAvailable } = await chrome.storage.local.get(["updateAvailable"]);
+  if (updateAvailable) {
+    $("updateVersion").textContent = updateAvailable.version;
+    $("updateChangelog").textContent = updateAvailable.changelog || "";
+    $("updateBanner").classList.add("visible");
+  }
+}
+
+$("updateBtn").addEventListener("click", async () => {
+  const { updateAvailable } = await chrome.storage.local.get(["updateAvailable"]);
+  if (updateAvailable?.downloadUrl) {
+    chrome.tabs.create({ url: updateAvailable.downloadUrl.startsWith("http")
+      ? updateAvailable.downloadUrl
+      : "https://vakshiksha-voice-learn.lovable.app/extension" });
+  }
+});
+
+$("dismissBtn").addEventListener("click", () => {
+  $("updateBanner").classList.remove("visible");
+});
+
+$("checkUpdateLink")?.addEventListener("click", (e) => {
+  e.preventDefault();
+  chrome.runtime.sendMessage({ action: "checkUpdate" }, () => {
+    setTimeout(async () => {
+      await checkAndShowUpdate();
+      if (!$("updateBanner").classList.contains("visible")) {
+        showStatus($("mainStatus"), "You're on the latest version!", "success");
+      }
+    }, 1500);
+  });
+});
+
 // --- Init ---
 async function init() {
+  // Show current version
+  const ver = chrome.runtime.getManifest().version;
+  const verEl = $("currentVersion");
+  if (verEl) verEl.textContent = ver;
+
   const stored = await chrome.storage.local.get(["session"]);
   if (stored.session?.access_token) {
     showMain(stored.session);
@@ -45,6 +85,8 @@ async function init() {
     $("loginSection").classList.add("active");
     $("mainSection").classList.remove("active");
   }
+
+  await checkAndShowUpdate();
 }
 
 async function showMain(session) {
