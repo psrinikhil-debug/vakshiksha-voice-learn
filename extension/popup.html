@@ -57,6 +57,14 @@
     .divider { height: 1px; background: #27272a; margin: 16px 0; }
     .instructions { font-size: 11px; color: #71717a; line-height: 1.5; }
     .instructions strong { color: #a1a1aa; }
+    .update-banner { background: linear-gradient(135deg, #06b6d420, #6366f120); border: 1px solid #06b6d440; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; display: none; }
+    .update-banner.visible { display: block; }
+    .update-banner .update-title { font-size: 12px; font-weight: 600; color: #67e8f9; margin-bottom: 4px; }
+    .update-banner .update-changelog { font-size: 11px; color: #a1a1aa; margin-bottom: 8px; }
+    .update-banner .update-actions { display: flex; gap: 8px; }
+    .update-banner .btn-update { flex: 1; padding: 7px; border: none; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; background: linear-gradient(135deg, #06b6d4, #6366f1); color: #fff; }
+    .update-banner .btn-dismiss { padding: 7px 12px; border: 1px solid #27272a; border-radius: 6px; font-size: 11px; cursor: pointer; background: transparent; color: #a1a1aa; }
+    .version-info { font-size: 10px; color: #52525b; text-align: center; margin-top: 8px; }
   </style>
 </head>
 <body>
