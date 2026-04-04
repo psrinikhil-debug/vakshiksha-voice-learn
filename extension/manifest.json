@@ -3,7 +3,10 @@
   "name": "Vakshiksha AI Video Dubbing",
   "version": "1.0.0",
   "description": "Dub any video on the web into 13+ languages with AI. Requires Vakshiksha Pro.",
-  "permissions": ["activeTab", "storage"],
+  "permissions": ["activeTab", "storage", "alarms"],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
