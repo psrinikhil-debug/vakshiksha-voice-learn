@@ -7,6 +7,20 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Map short language codes to Murf locale codes
+const LOCALE_MAP: Record<string, string> = {
+  hi: "hi_IN", ta: "ta_IN", te: "te_IN", bn: "bn_IN", mr: "mr_IN",
+  gu: "gu_IN", kn: "kn_IN", ml: "ml_IN", es: "es_ES", fr: "fr_FR",
+  de: "de_DE", ja: "ja_JP", zh: "zh_CN", en: "en_US", ko: "ko_KR",
+  it: "it_IT", pt: "pt_BR", pl: "pl_PL", ru: "ru_RU", tr: "tr_TR",
+  ar: "ar_SA", nl: "nl_NL", sv: "sv_SE", da: "da_DK", fi: "fi_FI",
+  no: "nb_NO", id: "id_ID", vi: "vi_VN", th: "th_TH",
+};
+
+function toLocale(code: string): string {
+  return LOCALE_MAP[code] || code;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -46,18 +60,18 @@ serve(async (req) => {
 
     // Check dubbing status
     if (action === "status") {
-      const dubbingId = url.searchParams.get("dubbing_id");
-      if (!dubbingId) throw new Error("dubbing_id required");
+      const jobId = url.searchParams.get("dubbing_id");
+      if (!jobId) throw new Error("dubbing_id required");
 
       const { data: job } = await supabase
         .from("dubbing_jobs")
         .select("id")
-        .eq("dubbing_id", dubbingId)
+        .eq("dubbing_id", jobId)
         .single();
       if (!job) throw new Error("Dubbing job not found or access denied");
 
       const statusRes = await fetch(
-        `https://api.murf.ai/v1/video/dub/${dubbingId}`,
+        `https://api.murf.ai/v1/murfdub/jobs/${jobId}/status`,
         {
           method: "GET",
           headers: { "api-key": MURF_API_KEY },
@@ -66,30 +80,41 @@ serve(async (req) => {
       const statusData = await statusRes.json();
       console.log("Murf status response:", JSON.stringify(statusData));
 
-      // Normalize status for frontend: map Murf statuses to our expected format
-      const normalizedStatus = statusData.status === "completed" ? "dubbed" : statusData.status;
+      // Normalize status: Murf uses COMPLETED/FAILED/IN_PROGRESS etc.
+      const rawStatus = (statusData.status || "").toLowerCase();
+      let normalizedStatus = rawStatus;
+      if (rawStatus === "completed" || rawStatus === "success") {
+        normalizedStatus = "dubbed";
+      } else if (rawStatus === "failed" || rawStatus === "error") {
+        normalizedStatus = "failed";
+      } else {
+        normalizedStatus = "processing";
+      }
 
-      return new Response(JSON.stringify({ ...statusData, status: normalizedStatus }), {
+      return new Response(JSON.stringify({
+        ...statusData,
+        status: normalizedStatus,
+        download_url: statusData.download_url || null,
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     // Download dubbed audio
     if (action === "download") {
-      const dubbingId = url.searchParams.get("dubbing_id");
-      const languageCode = url.searchParams.get("language_code") || "hi";
-      if (!dubbingId) throw new Error("dubbing_id required");
+      const jobId = url.searchParams.get("dubbing_id");
+      if (!jobId) throw new Error("dubbing_id required");
 
       const { data: job } = await supabase
         .from("dubbing_jobs")
         .select("id")
-        .eq("dubbing_id", dubbingId)
+        .eq("dubbing_id", jobId)
         .single();
       if (!job) throw new Error("Dubbing job not found or access denied");
 
-      // Get the dubbed result from Murf
+      // Get the status which includes download_url when completed
       const resultRes = await fetch(
-        `https://api.murf.ai/v1/video/dub/${dubbingId}`,
+        `https://api.murf.ai/v1/murfdub/jobs/${jobId}/status`,
         {
           method: "GET",
           headers: { "api-key": MURF_API_KEY },
@@ -98,8 +123,7 @@ serve(async (req) => {
       const resultData = await resultRes.json();
       console.log("Murf download result:", JSON.stringify(resultData));
 
-      // Murf returns a download URL in the response
-      const downloadUrl = resultData.audio_url || resultData.output_url || resultData.url;
+      const downloadUrl = resultData.download_url || resultData.output_url || resultData.audio_url || resultData.url;
       if (!downloadUrl) throw new Error("No download URL available yet");
 
       const dlRes = await fetch(downloadUrl);
@@ -108,8 +132,8 @@ serve(async (req) => {
       return new Response(dlRes.body, {
         headers: {
           ...corsHeaders,
-          "Content-Type": "audio/mpeg",
-          "Content-Disposition": `attachment; filename="dubbed_${languageCode}.mp3"`,
+          "Content-Type": dlRes.headers.get("Content-Type") || "audio/mpeg",
+          "Content-Disposition": `attachment; filename="dubbed.mp3"`,
         },
       });
     }
@@ -118,18 +142,18 @@ serve(async (req) => {
     const contentType = req.headers.get("content-type") || "";
     let targetLang: string;
     let sourceLang: string;
-    let videoUrl: string | null = null;
+    let fileUrl: string | null = null;
 
     if (contentType.includes("application/json")) {
       const body = await req.json();
-      videoUrl = body.source_url;
+      fileUrl = body.source_url;
       targetLang = body.target_lang || "hi";
       sourceLang = body.source_lang || "en";
 
-      if (!videoUrl || typeof videoUrl !== "string") {
+      if (!fileUrl || typeof fileUrl !== "string") {
         throw new Error("source_url is required");
       }
-      if (videoUrl.length > 2048) {
+      if (fileUrl.length > 2048) {
         throw new Error("URL too long");
       }
     } else {
@@ -149,7 +173,6 @@ serve(async (req) => {
         throw new Error("Invalid file type. Please upload a video or audio file.");
       }
 
-      // Upload to Supabase storage to get a public URL for Murf
       const serviceClient = createClient(
         Deno.env.get("SUPABASE_URL")!,
         Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -170,44 +193,50 @@ serve(async (req) => {
         .from("chat-uploads")
         .getPublicUrl(fileName);
 
-      videoUrl = publicUrlData.publicUrl;
+      fileUrl = publicUrlData.publicUrl;
     }
 
-    // Call Murf Video Dubbing API
-    const murfBody = {
-      video_url: videoUrl,
-      target_language: targetLang,
-      source_language: sourceLang,
-    };
+    // Build multipart/form-data for Murf API
+    const targetLocale = toLocale(targetLang);
+    const sourceLocale = toLocale(sourceLang);
 
-    console.log("Calling Murf dub API with:", JSON.stringify(murfBody));
+    const murfForm = new FormData();
+    murfForm.append("file_url", fileUrl!);
+    murfForm.append("target_locales", targetLocale);
+    murfForm.append("source_locale", sourceLocale);
 
-    const response = await fetch("https://api.murf.ai/v1/video/dub", {
+    console.log("Calling Murf dub API with:", JSON.stringify({
+      file_url: fileUrl,
+      target_locales: targetLocale,
+      source_locale: sourceLocale,
+    }));
+
+    const response = await fetch("https://api.murf.ai/v1/murfdub/jobs/create", {
       method: "POST",
       headers: {
         "api-key": MURF_API_KEY,
-        "Content-Type": "application/json",
+        // Do NOT set Content-Type — fetch will set multipart boundary automatically
       },
-      body: JSON.stringify(murfBody),
+      body: murfForm,
     });
 
     const data = await response.json();
     console.log("Murf dub response:", JSON.stringify(data));
 
     if (!response.ok) {
-      const murfError = data?.error?.message || data?.message || data?.error || "Video dubbing failed";
+      const murfError = data?.error?.message || data?.message || data?.error || data?.detail || "Video dubbing failed";
       console.error("Murf dubbing error:", JSON.stringify(data));
       throw new Error(typeof murfError === "string" ? murfError : "Video dubbing failed. Please try again.");
     }
 
-    // Store dubbing job — use Murf's job/task ID
-    const dubbingId = data.dubbing_id || data.id || data.task_id;
-    if (dubbingId) {
+    // Murf returns job_id
+    const jobId = data.job_id || data.id || data.dubbing_id;
+    if (jobId) {
       const { error: insertError } = await supabase
         .from("dubbing_jobs")
         .insert({
           user_id: user.id,
-          dubbing_id: String(dubbingId),
+          dubbing_id: String(jobId),
           target_lang: targetLang,
           source_lang: sourceLang,
         });
@@ -216,7 +245,7 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ ...data, dubbing_id: dubbingId }), {
+    return new Response(JSON.stringify({ ...data, dubbing_id: jobId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
