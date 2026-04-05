@@ -128,7 +128,9 @@ serve(async (req) => {
       const resultData = await resultRes.json();
       console.log("Murf download result:", JSON.stringify(resultData));
 
-      const downloadUrl = resultData.download_url || resultData.output_url || resultData.audio_url || resultData.url;
+      const downloadUrl = resultData.download_url
+        || resultData.download_details?.[0]?.download_url
+        || resultData.output_url || resultData.audio_url || resultData.url;
       if (!downloadUrl) throw new Error("No download URL available yet");
 
       const dlRes = await fetch(downloadUrl);
