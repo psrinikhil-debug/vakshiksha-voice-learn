@@ -54,20 +54,28 @@ export function useAIDubbing() {
 
           if (statusData.status === "dubbed") {
             stopPolling();
-            const dlRes = await fetch(
-              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/murf-dub?action=download&dubbing_id=${dubbingId}&language_code=${targetLang}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                  apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-                },
-              }
-            );
-            const blob = await dlRes.blob();
-            const url = URL.createObjectURL(blob);
-            setDubbedAudioUrl(url);
-            setStatus("done");
-            setProgress(100);
+            // Use download_url from status if available, otherwise fetch via download action
+            const dlUrlFromStatus = statusData.download_url;
+            if (dlUrlFromStatus) {
+              setDubbedAudioUrl(dlUrlFromStatus);
+              setStatus("done");
+              setProgress(100);
+            } else {
+              const dlRes = await fetch(
+                `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/murf-dub?action=download&dubbing_id=${dubbingId}&language_code=${targetLang}`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                  },
+                }
+              );
+              const blob = await dlRes.blob();
+              const url = URL.createObjectURL(blob);
+              setDubbedAudioUrl(url);
+              setStatus("done");
+              setProgress(100);
+            }
           } else if (statusData.status === "failed") {
             stopPolling();
             throw new Error("Dubbing failed");
