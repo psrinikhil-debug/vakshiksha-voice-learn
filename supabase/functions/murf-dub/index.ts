@@ -91,10 +91,15 @@ serve(async (req) => {
         normalizedStatus = "processing";
       }
 
+      // Extract download URL from download_details array if top-level is null
+      const dlUrl = statusData.download_url
+        || statusData.download_details?.[0]?.download_url
+        || null;
+
       return new Response(JSON.stringify({
         ...statusData,
         status: normalizedStatus,
-        download_url: statusData.download_url || null,
+        download_url: dlUrl,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -123,7 +128,9 @@ serve(async (req) => {
       const resultData = await resultRes.json();
       console.log("Murf download result:", JSON.stringify(resultData));
 
-      const downloadUrl = resultData.download_url || resultData.output_url || resultData.audio_url || resultData.url;
+      const downloadUrl = resultData.download_url
+        || resultData.download_details?.[0]?.download_url
+        || resultData.output_url || resultData.audio_url || resultData.url;
       if (!downloadUrl) throw new Error("No download URL available yet");
 
       const dlRes = await fetch(downloadUrl);
