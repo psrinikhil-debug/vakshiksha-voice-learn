@@ -91,10 +91,15 @@ serve(async (req) => {
         normalizedStatus = "processing";
       }
 
+      // Extract download URL from download_details array if top-level is null
+      const dlUrl = statusData.download_url
+        || statusData.download_details?.[0]?.download_url
+        || null;
+
       return new Response(JSON.stringify({
         ...statusData,
         status: normalizedStatus,
-        download_url: statusData.download_url || null,
+        download_url: dlUrl,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
