@@ -67,13 +67,13 @@ const Pro = () => {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-3">
-            <Link to="/extension" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
-              <Download className="w-3.5 h-3.5" /> Extension
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Link to="/extension" className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1" title="Download Extension">
+              <Download className="w-4 h-4" /><span className="hidden sm:inline">Extension</span>
             </Link>
-            <span className="text-sm text-muted-foreground hidden sm:block">{user?.email}</span>
-            <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1.5">
-              <LogOut className="w-4 h-4" /> Sign Out
+            <span className="text-sm text-muted-foreground hidden sm:block truncate max-w-[140px]">{user?.email}</span>
+            <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1.5 px-2 sm:px-3">
+              <LogOut className="w-4 h-4" /><span className="hidden sm:inline">Sign Out</span>
             </Button>
           </div>
         </div>
