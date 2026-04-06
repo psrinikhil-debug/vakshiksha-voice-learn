@@ -61,11 +61,15 @@ export function useProChat(userId: string | undefined) {
     }
   }, []);
 
+  // Clean up polling on unmount
+  useEffect(() => stopPolling, [stopPolling]);
+
   const sendMessage = useCallback(
     async (content: string, imageUrl?: string) => {
       if (!content.trim() || sending) return;
       setError(null);
       setSending(true);
+      startPolling();
 
       // Build conversation history (last 10 exchanges)
       const history = messages.slice(-20).map((m) => ({
@@ -98,13 +102,23 @@ export function useProChat(userId: string | undefined) {
         if (!res.ok || data.error) {
           throw new Error(data.error || "Failed to send message");
         }
+
+        // Fetch final state after edge function responds
+        const { data: fresh } = await supabase
+          .from("pro_chat_messages")
+          .select("*")
+          .eq("user_id", userId!)
+          .order("created_at", { ascending: true })
+          .limit(100);
+        if (fresh) setMessages(fresh as ChatMessage[]);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "Failed to send");
       } finally {
+        stopPolling();
         setSending(false);
       }
     },
-    [messages, sending]
+    [messages, sending, userId, startPolling, stopPolling]
   );
 
   const uploadImage = useCallback(
