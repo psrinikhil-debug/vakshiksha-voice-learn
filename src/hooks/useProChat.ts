@@ -33,35 +33,33 @@ export function useProChat(userId: string | undefined) {
     loadMessages();
   }, [userId]);
 
-  // Realtime subscription
-  useEffect(() => {
-    if (!userId) return;
+  // Poll for new messages while sending (to capture assistant response)
+  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    const channel = supabase
-      .channel("pro-chat-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "pro_chat_messages",
-          filter: `user_id=eq.${userId}`,
-        },
-        (payload) => {
-          const newMsg = payload.new as ChatMessage;
-          setMessages((prev) => {
-            // Avoid duplicates
-            if (prev.some((m) => m.id === newMsg.id)) return prev;
-            return [...prev, newMsg];
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+  const startPolling = useCallback(() => {
+    if (!userId || pollingRef.current) return;
+    pollingRef.current = setInterval(async () => {
+      const { data } = await supabase
+        .from("pro_chat_messages")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true })
+        .limit(100);
+      if (data) {
+        setMessages((prev) => {
+          if (data.length !== prev.length) return data as ChatMessage[];
+          return prev;
+        });
+      }
+    }, 1500);
   }, [userId]);
+
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, []);
 
   const sendMessage = useCallback(
     async (content: string, imageUrl?: string) => {
